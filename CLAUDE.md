@@ -18,9 +18,9 @@ must not modify files outside their owner's layer without coordinating first.
 
 | Layer | Directory | Owner | Claude Code branch |
 |-------|-----------|-------|--------------------|
-| Data pipeline (download + preprocess) | `pipeline/` | Collaborator A | `feat/pipeline` |
-| Backend API + tile server | `backend/` | Collaborator B | `feat/backend` |
-| Frontend map dashboard | `frontend/` | Collaborator C | `feat/frontend` |
+| Data pipeline (download + preprocess) | `pipeline/` | Nico | `feat/pipeline` |
+| Backend API + tile server | `backend/` | Arturo | `feat/backend` |
+| Frontend map dashboard | `frontend/` | Franco | `feat/frontend` |
 
 Shared files (`CLAUDE.md`, `.gitignore`, `pyproject.toml`, `docker-compose.yml`,
 `README.md`) require a PR — no direct commits to `main` from Claude agents.

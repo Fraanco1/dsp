@@ -4,6 +4,51 @@ DeepTech hackathon project using Argentine satellite data (SAOCOM) to analyze
 soil composition and moisture. Deliverable: a general-purpose web platform with
 an interactive map dashboard.
 
+**3 collaborators, each running Claude Code independently.**
+
+---
+
+## Collaboration Rules (read first)
+
+This repo has 3 collaborators each using Claude Code simultaneously. To avoid
+conflicts, each person owns a distinct layer of the stack. Claude Code agents
+must not modify files outside their owner's layer without coordinating first.
+
+### Layer ownership
+
+| Layer | Directory | Owner | Claude Code branch |
+|-------|-----------|-------|--------------------|
+| Data pipeline (download + preprocess) | `pipeline/` | Collaborator A | `feat/pipeline` |
+| Backend API + tile server | `backend/` | Collaborator B | `feat/backend` |
+| Frontend map dashboard | `frontend/` | Collaborator C | `feat/frontend` |
+
+Shared files (`CLAUDE.md`, `.gitignore`, `pyproject.toml`, `docker-compose.yml`,
+`README.md`) require a PR — no direct commits to `main` from Claude agents.
+
+### Git workflow
+
+- Branch from `main` — `git checkout -b feat/<layer>-<short-description>`
+- Commit often with conventional commits: `feat:`, `fix:`, `chore:`, `docs:`
+- Open a PR to merge into `main`; at least one other collaborator reviews
+- Pull `main` before starting a new task: `git pull origin main`
+- **Never force-push to `main`**
+
+### What Claude Code should NOT do autonomously
+
+- Commit or push to `main` directly
+- Modify files in another layer's directory
+- Install system packages (`apt`, `brew`) without documenting in `CLAUDE.md`
+- Commit `.env` files, credentials, or raw satellite data files
+
+### Interface contracts (how layers communicate)
+
+- **Pipeline → Backend:** pipeline writes Cloud-Optimized GeoTIFFs to `data/processed/`
+  with a fixed naming scheme: `<product>_<date>_<tile>.tif`
+  (e.g. `soil_moisture_20240315_pampa_r01c01.tif`)
+- **Backend → Frontend:** backend exposes tile endpoint at
+  `GET /tiles/{layer}/{z}/{x}/{y}.png` and a metadata endpoint
+  `GET /layers` returning available products as GeoJSON
+
 ---
 
 ## Project Goal

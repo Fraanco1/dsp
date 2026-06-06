@@ -1,0 +1,44 @@
+# Data — never commit raw satellite imagery or large processed files
+data/
+*.tif
+*.tiff
+*.nc
+*.h5
+*.hdf5
+*.zip
+*.safe/
+*.SAFE/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+.eggs/
+
+# Environment / secrets — never commit credentials
+.env
+.env.*
+*.pem
+*.key
+earthdata_credentials
+netrc
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Build artifacts
+node_modules/
+frontend/dist/
+frontend/build/

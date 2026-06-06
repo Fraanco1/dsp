@@ -5,16 +5,21 @@ import earthaccess
 from config import DATA_RAW, EARTHDATA_USERNAME, EARTHDATA_PASSWORD
 
 
-def download_dem(bbox: tuple[float, float, float, float], dest: Path | None = None) -> list[Path]:
+def download_dem(
+    bbox: tuple[float, float, float, float],
+    dest: Path | None = None,
+) -> list[Path]:
     """
     Download Copernicus DEM GLO-30 tiles covering bbox.
+
+    Used for terrain correction in the SAR preprocessing chain.
 
     Args:
         bbox: (min_lon, min_lat, max_lon, max_lat)
         dest: destination directory (default: data/raw/dem)
 
     Returns:
-        List of downloaded file paths.
+        List of downloaded tile paths.
     """
     dest = dest or DATA_RAW / "dem"
     dest.mkdir(parents=True, exist_ok=True)
@@ -22,8 +27,7 @@ def download_dem(bbox: tuple[float, float, float, float], dest: Path | None = No
     if EARTHDATA_USERNAME and EARTHDATA_PASSWORD:
         earthaccess.login(strategy="environment")
     else:
-        # Falls back to interactive login or .netrc
-        earthaccess.login()
+        earthaccess.login()  # interactive / .netrc fallback
 
     min_lon, min_lat, max_lon, max_lat = bbox
     results = earthaccess.search_data(
@@ -32,7 +36,7 @@ def download_dem(bbox: tuple[float, float, float, float], dest: Path | None = No
     )
 
     if not results:
-        raise RuntimeError(f"No Copernicus DEM tiles found for bbox {bbox}")
+        raise RuntimeError(f"No Copernicus DEM GLO-30 tiles found for bbox {bbox}")
 
     print(f"Found {len(results)} DEM tile(s). Downloading to {dest} ...")
     files = earthaccess.download(results, local_path=str(dest))

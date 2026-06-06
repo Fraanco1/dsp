@@ -1,0 +1,47 @@
+.layer-panel {
+  width: 220px;
+  background: #1e2130;
+  border-right: 1px solid #2d3148;
+  padding: 16px 12px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.panel-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background 0.15s;
+}
+
+.layer-item:hover { background: #2d3148; }
+.layer-item.active { background: #2d3148; outline: 1px solid #3b4268; }
+
+.layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.layer-label {
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.layer-unit {
+  font-size: 0.7rem;
+  color: #64748b;
+}

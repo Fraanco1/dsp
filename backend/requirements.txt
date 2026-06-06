@@ -1,0 +1,7 @@
+fastapi>=0.111
+uvicorn[standard]>=0.29
+rio-tiler>=6.0
+rasterio>=1.3
+rio-cogeo>=5.0
+python-dotenv>=1.0
+pydantic-settings>=2.0

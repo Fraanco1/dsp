@@ -1,9 +1,34 @@
+# SAR download
+asf-search>=6.0
+
+# Sentinel-2 access
+sentinelhub>=3.10
+
+# SAR preprocessing (requires ESA SNAP installed separately)
+# Install SNAP: https://step.esa.int/main/download/snap-download/
+pyroSAR>=0.22
+snapista>=0.4
+
+# Raster I/O and processing
 rasterio>=1.3
+xarray>=2023.0
+rioxarray>=0.15
 numpy>=1.24
+scipy>=1.11
+
+# Cloud-Optimized GeoTIFF export
+rio-cogeo>=3.6
+
+# ML / clustering
+scikit-learn>=1.3
+
+# Geometry / projections
 shapely>=2.0
 pyproj>=3.5
+
+# DEM download
 earthaccess>=0.9
-cdsetool>=0.1
-requests>=2.31
+
+# Utilities
 python-dotenv>=1.0
-GDAL>=3.6
+requests>=2.31

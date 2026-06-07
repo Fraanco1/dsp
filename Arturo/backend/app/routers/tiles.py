@@ -88,8 +88,8 @@ def get_tile(
         else:
             colormap = get_colormap(layer)
 
-        png_bytes = img.render(img_format="PNG", colormap=colormap)
+        png_bytes = img.render(img_format="PNG", colormap=colormap, add_mask=True)
     else:
-        png_bytes = img.render(img_format="PNG")
+        png_bytes = img.render(img_format="PNG", add_mask=True)
 
     return Response(content=png_bytes, media_type="image/png")

@@ -8,3 +8,21 @@ services:
     environment:
       DATA_DIR: /data/processed
     restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  pipeline:
+    build: .
+    profiles:
+      - pipeline
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    command: python main.py

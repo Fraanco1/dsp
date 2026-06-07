@@ -1,12 +1,14 @@
 from rio_tiler.colormap import cmap as _cmap
 
 _PRODUCT_COLORMAP: dict[str, str] = {
-    "soil_moisture": "blues",
-    "bsi": "ylorbn",
-    "ndmi": "rdylgn",
-    "ndvi": "rdylgn",
-    "vegetation_water": "rdylgn",
-    "sar_texture": "greys",
+    "soil_moisture":  "blues",
+    "soil_cluster":   "tab10",
+    "bsi":            "ylorrd",
+    "ndmi":           "rdylgn",
+    "ndvi":           "rdylgn",
+    "ndwi":           "blues",
+    "backscatter_hh": "greys",
+    "sar_texture":    "greys",
 }
 
 _DEFAULT = "viridis"

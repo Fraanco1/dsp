@@ -18,28 +18,40 @@ def _cog_bounds_wgs84(path: Path) -> list[float]:
     return list(bounds)  # [west, south, east, north]
 
 
+def latest_file_for_product(product: str) -> Path | None:
+    """Return the most recent .tif for a given product name, or None."""
+    data_dir = settings.data_dir
+    if not data_dir.exists():
+        return None
+    matches = sorted(
+        (f for f in data_dir.glob(f"{product}_*.tif") if _FILENAME_RE.match(f.name)),
+        key=lambda f: _FILENAME_RE.match(f.name).group("date"),
+        reverse=True,
+    )
+    return matches[0] if matches else None
+
+
 def list_layers() -> dict:
     data_dir = settings.data_dir
-    features = []
-
     if not data_dir.exists():
-        return {"type": "FeatureCollection", "features": features}
+        return {"type": "FeatureCollection", "features": []}
 
-    for tif in sorted(data_dir.glob("*.tif")):
+    # Group by product name, keep only most recent date per product
+    best: dict[str, tuple[str, Path]] = {}  # product -> (date, path)
+    for tif in data_dir.glob("*.tif"):
         m = _FILENAME_RE.match(tif.name)
         if not m:
             continue
+        product, date = m.group("product"), m.group("date")
+        if product not in best or date > best[product][0]:
+            best[product] = (date, tif)
 
-        product = m.group("product")
-        date = m.group("date")
-        tile = m.group("tile")
-        layer_id = tif.stem  # filename without .tif
-
+    features = []
+    for product, (date, tif) in sorted(best.items()):
         try:
             west, south, east, north = _cog_bounds_wgs84(tif)
         except Exception:
             continue
-
         features.append(
             {
                 "type": "Feature",
@@ -56,10 +68,9 @@ def list_layers() -> dict:
                     ],
                 },
                 "properties": {
-                    "id": layer_id,
+                    "id": product,
                     "product": product,
                     "date": date,
-                    "tile": tile,
                     "bounds": [west, south, east, north],
                 },
             }

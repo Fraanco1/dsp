@@ -1,10 +1,18 @@
 .layer-panel {
-  width: 220px;
+  width: 230px;
   background: #1e2130;
   border-right: 1px solid #2d3148;
-  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
   flex-shrink: 0;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 6px;
 }
 
 .panel-title {
@@ -12,22 +20,41 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #64748b;
-  margin-bottom: 10px;
+}
+
+.backend-badge {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.backend-badge.online  { background: #14532d; color: #4ade80; }
+.backend-badge.offline { background: #2d2008; color: #fbbf24; }
+
+ul {
+  list-style: none;
+  padding: 0 8px;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .layer-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 7px;
   cursor: pointer;
-  margin-bottom: 4px;
-  transition: background 0.15s;
+  margin-bottom: 2px;
+  transition: background 0.12s;
+  user-select: none;
 }
-
-.layer-item:hover { background: #2d3148; }
-.layer-item.active { background: #2d3148; outline: 1px solid #3b4268; }
+.layer-item:hover              { background: #2d3148; }
+.layer-item.active             { background: #2d3148; outline: 1px solid #3b4268; }
+.layer-item.unavailable        { opacity: 0.45; cursor: default; }
+.layer-item.unavailable:hover  { background: transparent; }
 
 .layer-dot {
   width: 10px;
@@ -36,12 +63,34 @@
   flex-shrink: 0;
 }
 
-.layer-label {
-  font-size: 0.85rem;
-  flex: 1;
+.layer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.layer-unit {
-  font-size: 0.7rem;
-  color: #64748b;
+.layer-label {
+  font-size: 0.83rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.layer-date    { font-size: 0.68rem; color: #64748b; }
+.layer-pending { font-size: 0.68rem; color: #475569; font-style: italic; }
+.layer-unit    { font-size: 0.68rem; color: #475569; }
+
+.panel-footer {
+  padding: 10px 14px;
+  border-top: 1px solid #2d3148;
+  font-size: 0.65rem;
+  color: #475569;
+  line-height: 1.6;
 }

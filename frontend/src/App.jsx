@@ -2,24 +2,39 @@ import React, { useState } from 'react'
 import MapView from './components/MapView'
 import LayerPanel from './components/LayerPanel'
 import Header from './components/Header'
+import Legend from './components/Legend'
+import { useLayers } from './hooks/useLayers'
 import './App.css'
 
-const LAYERS = [
-  { id: 'soil_moisture', label: 'Soil Moisture', unit: 'm³/m³', color: '#3b82f6' },
-  { id: 'bsi',           label: 'Bare Soil Index', unit: 'BSI', color: '#f59e0b' },
-  { id: 'ndmi',          label: 'Veg. Water Content', unit: 'NDMI', color: '#10b981' },
-  { id: 'ndvi',          label: 'Vegetation (NDVI)', unit: 'NDVI', color: '#22c55e' },
-]
-
 export default function App() {
-  const [activeLayer, setActiveLayer] = useState(LAYERS[0].id)
+  const { layers, loading, backendOnline } = useLayers()
+  const [activeId, setActiveId] = useState('soil_moisture')
+
+  const activeLayer = layers.find(l => l.id === activeId) ?? null
+
+  if (loading) {
+    return (
+      <div className="app">
+        <Header backendOnline={false} />
+        <div className="loading">Loading layers…</div>
+      </div>
+    )
+  }
 
   return (
     <div className="app">
-      <Header />
+      <Header backendOnline={backendOnline} />
       <div className="workspace">
-        <LayerPanel layers={LAYERS} activeLayer={activeLayer} onSelect={setActiveLayer} />
-        <MapView activeLayer={activeLayer} />
+        <LayerPanel
+          layers={layers}
+          activeId={activeId}
+          onSelect={setActiveId}
+          backendOnline={backendOnline}
+        />
+        <div className="map-area">
+          <MapView activeLayer={activeLayer} />
+          <Legend layer={activeLayer} />
+        </div>
       </div>
     </div>
   )

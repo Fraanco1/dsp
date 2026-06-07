@@ -1,0 +1,54 @@
+.legend {
+  position: absolute;
+  bottom: 32px;
+  right: 16px;
+  z-index: 1000;
+  background: rgba(15, 17, 23, 0.88);
+  border: 1px solid #2d3148;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  backdrop-filter: blur(4px);
+}
+
+.legend-title {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.legend-bar {
+  height: 10px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.legend-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.legend-categorical {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.legend-cat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}
+
+.legend-cat-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}

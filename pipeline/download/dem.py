@@ -31,7 +31,7 @@ def download_dem(
 
     min_lon, min_lat, max_lon, max_lat = bbox
     results = earthaccess.search_data(
-        short_name="COP-DEM_GLO-30-DGED",
+        short_name="SRTMGL1",  # NASA SRTM 1 arc-second (~30 m)
         bounding_box=(min_lon, min_lat, max_lon, max_lat),
     )
 

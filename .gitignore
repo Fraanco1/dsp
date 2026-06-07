@@ -37,8 +37,8 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
-*.ipynb
-!notebooks/*.ipynb
+# *.ipynb
+# !notebooks/*.ipynb
 
 # Build artifacts
 node_modules/

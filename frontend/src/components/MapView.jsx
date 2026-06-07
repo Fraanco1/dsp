@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import './MapView.css'
 
 // Argentine Pampas center and bbox
@@ -26,12 +27,9 @@ function OverlayLayer({ layer }) {
       return
     }
 
-    const L = window.L ?? globalThis.L
-    if (!L) return
-
     overlayRef.current?.remove()
     const url = buildTileUrl(layer)
-    overlayRef.current = L.tileLayer(url, { opacity: 0.75, zIndex: 400 }).addTo(map)
+    overlayRef.current = L.tileLayer(url, { opacity: 0.75, zIndex: 400, maxNativeZoom: 8 }).addTo(map)
 
     return () => {
       overlayRef.current?.remove()

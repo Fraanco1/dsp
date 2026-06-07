@@ -31,27 +31,48 @@ def latest_file_for_product(product: str) -> Path | None:
     return matches[0] if matches else None
 
 
+def file_for_product_date(product: str, date: str) -> Path | None:
+    """Return the .tif for a specific product + date, or None."""
+    data_dir = settings.data_dir
+    if not data_dir.exists():
+        return None
+    matches = [
+        f for f in data_dir.glob(f"{product}_{date}_*.tif")
+        if _FILENAME_RE.match(f.name)
+    ]
+    return matches[0] if matches else None
+
+
 def list_layers() -> dict:
     data_dir = settings.data_dir
     if not data_dir.exists():
         return {"type": "FeatureCollection", "features": []}
 
-    # Group by product name, keep only most recent date per product
-    best: dict[str, tuple[str, Path]] = {}  # product -> (date, path)
+    # Collect all dates per product
+    all_dates: dict[str, list[str]] = {}
+    latest: dict[str, tuple[str, Path]] = {}
+
     for tif in data_dir.glob("*.tif"):
         m = _FILENAME_RE.match(tif.name)
         if not m:
             continue
         product, date = m.group("product"), m.group("date")
-        if product not in best or date > best[product][0]:
-            best[product] = (date, tif)
+        all_dates.setdefault(product, [])
+        if date not in all_dates[product]:
+            all_dates[product].append(date)
+        if product not in latest or date > latest[product][0]:
+            latest[product] = (date, tif)
 
     features = []
-    for product, (date, tif) in sorted(best.items()):
+    for product in sorted(all_dates):
+        date, tif = latest[product]
         try:
             west, south, east, north = _cog_bounds_wgs84(tif)
         except Exception:
             continue
+
+        dates_sorted = sorted(all_dates[product], reverse=True)
+
         features.append(
             {
                 "type": "Feature",
@@ -70,7 +91,8 @@ def list_layers() -> dict:
                 "properties": {
                     "id": product,
                     "product": product,
-                    "date": date,
+                    "date": date,           # most recent — backward compat
+                    "dates": dates_sorted,  # all available dates, newest first
                     "bounds": [west, south, east, north],
                 },
             }

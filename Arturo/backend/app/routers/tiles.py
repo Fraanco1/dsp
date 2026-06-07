@@ -6,7 +6,7 @@ from rio_tiler.errors import TileOutsideBounds
 from rio_tiler.io import COGReader
 
 from app.services.catalog import latest_file_for_product
-from app.services.colormaps import get_colormap
+from app.services.colormaps import PRODUCT_RANGE, get_colormap
 
 router = APIRouter()
 
@@ -73,12 +73,18 @@ def get_tile(
         raise HTTPException(status_code=500, detail=str(exc))
 
     if img.count == 1:
+        # Determine rescale range: request param → product default → skip
         if rescale:
             try:
                 vmin, vmax = map(float, rescale.split(","))
-                img.rescale(in_range=((vmin, vmax),))
             except Exception:
-                pass
+                vmin, vmax = None, None
+        else:
+            default = PRODUCT_RANGE.get(layer)
+            vmin, vmax = default if default else (None, None)
+
+        if vmin is not None and vmax is not None:
+            img.rescale(in_range=((vmin, vmax),))
 
         if colormap_name:
             try:

@@ -7,7 +7,7 @@ from rio_tiler.colormap import cmap as _cmap
 from rio_tiler.errors import TileOutsideBounds
 from rio_tiler.io import COGReader
 
-from app.services.catalog import latest_file_for_product
+from app.services.catalog import file_for_product_date, latest_file_for_product
 from app.services.colormaps import PRODUCT_RANGE, get_colormap
 
 router = APIRouter()
@@ -17,10 +17,15 @@ router = APIRouter()
     "/tiles/{layer}/tilejson.json",
     summary="TileJSON 2.2 metadata for a layer",
 )
-def get_tilejson(layer: str, request: Request) -> JSONResponse:
-    tif_path = latest_file_for_product(layer)
+def get_tilejson(
+    layer: str,
+    request: Request,
+    date: str | None = Query(default=None, description="Date YYYYMMDD"),
+) -> JSONResponse:
+    tif_path = file_for_product_date(layer, date) if date else latest_file_for_product(layer)
     if tif_path is None:
-        raise HTTPException(status_code=404, detail=f"Layer '{layer}' not found")
+        detail = f"Layer '{layer}' not found for date {date}" if date else f"Layer '{layer}' not found"
+        raise HTTPException(status_code=404, detail=detail)
 
     try:
         with COGReader(str(tif_path)) as cog:
@@ -58,12 +63,14 @@ def get_tile(
     z: int,
     x: int,
     y: int,
+    date: str | None = Query(default=None, description="Date YYYYMMDD — defaults to latest"),
     rescale: str | None = Query(default=None, description="min,max for linear stretch"),
     colormap_name: str | None = Query(default=None, description="Colormap name"),
 ) -> Response:
-    tif_path = latest_file_for_product(layer)
+    tif_path = file_for_product_date(layer, date) if date else latest_file_for_product(layer)
     if tif_path is None:
-        raise HTTPException(status_code=404, detail=f"Layer '{layer}' not found")
+        detail = f"Layer '{layer}' not found for date {date}" if date else f"Layer '{layer}' not found"
+        raise HTTPException(status_code=404, detail=detail)
 
     try:
         with COGReader(str(tif_path)) as cog:

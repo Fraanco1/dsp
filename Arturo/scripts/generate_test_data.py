@@ -18,7 +18,7 @@ from rasterio.crs import CRS
 
 BBOX = (-65.0, -38.0, -57.0, -30.0)  # Pampas (min_lon, min_lat, max_lon, max_lat)
 RESOLUTION = 0.02                     # degrees per pixel (~2 km)
-DATE = "20240315"
+DATES = ["20240101", "20240201", "20240315"]  # three timesteps for timeline demo
 TILE = "pampa_aoi"
 OUTPUT_DIR = Path(__file__).parents[2] / "data" / "processed"
 
@@ -117,25 +117,34 @@ def main():
     crs = CRS.from_epsg(4326)
 
     print(f"Grid: {width}×{height} pixels at {RESOLUTION}° resolution")
+    print(f"Dates: {DATES}")
     print(f"Output: {OUTPUT_DIR}/\n")
 
-    for i, (product, (vmin, vmax, _)) in enumerate(PRODUCTS.items()):
-        field = _make_field((height, width), vmin, vmax, seed=i)
-        field = _add_nodata_border(field)
-        path = OUTPUT_DIR / f"{product}_{DATE}_{TILE}.tif"
-        _write_cog(field, path, transform, crs)
-        print(f"  {product:20s} → {path.name}")
+    total = 0
+    for date_idx, date in enumerate(DATES):
+        print(f"── {date} ──")
+        for i, (product, (vmin, vmax, _)) in enumerate(PRODUCTS.items()):
+            # Different seed per (product, date) so each timestep looks distinct
+            seed = i + date_idx * len(PRODUCTS)
+            field = _make_field((height, width), vmin, vmax, seed=seed)
+            field = _add_nodata_border(field)
+            path = OUTPUT_DIR / f"{product}_{date}_{TILE}.tif"
+            _write_cog(field, path, transform, crs)
+            print(f"  {product:20s} → {path.name}")
+            total += 1
 
-    # soil_cluster: categorical (K-means label 0-5)
-    rng = np.random.default_rng(99)
-    raw = rng.integers(0, 6, size=(height, width), dtype=np.uint8)
-    raw_smooth = np.round(_smooth(raw.astype(np.float32), passes=12)).astype(np.uint8)
-    raw_smooth = np.clip(raw_smooth, 0, 5)
-    cluster_path = OUTPUT_DIR / f"soil_cluster_{DATE}_{TILE}.tif"
-    _write_categorical_cog(raw_smooth, cluster_path, transform, crs)
-    print(f"  {'soil_cluster':20s} → {cluster_path.name}")
+        # soil_cluster: categorical
+        rng = np.random.default_rng(99 + date_idx * 7)
+        raw = rng.integers(0, 6, size=(height, width), dtype=np.uint8)
+        raw_smooth = np.round(_smooth(raw.astype(np.float32), passes=12)).astype(np.uint8)
+        raw_smooth = np.clip(raw_smooth, 0, 5)
+        cluster_path = OUTPUT_DIR / f"soil_cluster_{date}_{TILE}.tif"
+        _write_categorical_cog(raw_smooth, cluster_path, transform, crs)
+        print(f"  {'soil_cluster':20s} → {cluster_path.name}")
+        total += 1
+        print()
 
-    print(f"\nDone. {len(PRODUCTS) + 1} COGs written.")
+    print(f"Done. {total} COGs written ({len(DATES)} dates × {len(PRODUCTS) + 1} products).")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,10 @@
+services:
+  backend:
+    build: ./Arturo/backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/processed:/data/processed:ro
+    environment:
+      DATA_DIR: /data/processed
+    restart: unless-stopped

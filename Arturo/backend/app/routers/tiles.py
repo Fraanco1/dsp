@@ -1,6 +1,8 @@
+import rasterio
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 from rasterio.errors import RasterioIOError
+from rasterio.warp import transform_bounds
 from rio_tiler.colormap import cmap as _cmap
 from rio_tiler.errors import TileOutsideBounds
 from rio_tiler.io import COGReader
@@ -22,9 +24,10 @@ def get_tilejson(layer: str, request: Request) -> JSONResponse:
 
     try:
         with COGReader(str(tif_path)) as cog:
-            bounds = list(cog.geographic_bounds)
             minzoom = cog.minzoom
             maxzoom = cog.maxzoom
+        with rasterio.open(str(tif_path)) as src:
+            bounds = list(transform_bounds(src.crs, "EPSG:4326", *src.bounds))
     except RasterioIOError as exc:
         raise HTTPException(status_code=422, detail=f"Invalid raster: {exc}")
     except Exception as exc:

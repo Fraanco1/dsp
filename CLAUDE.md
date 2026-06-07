@@ -19,8 +19,11 @@ must not modify files outside their owner's layer without coordinating first.
 | Layer | Directory | Owner | Claude Code branch |
 |-------|-----------|-------|--------------------|
 | Data pipeline (download + preprocess) | `pipeline/` | Nico | `feat/pipeline` |
-| Backend API + tile server | `backend/` | Arturo | `feat/backend` |
+| Backend API + tile server | `Arturo/backend/` | Arturo | `feat/backend` |
 | Frontend map dashboard | `frontend/` | Franco | `feat/frontend` |
+
+> Note: Arturo scaffolded his backend under `Arturo/backend/` (not `backend/`).
+> Do not move or rename this without coordinating with him.
 
 Shared files (`CLAUDE.md`, `.gitignore`, `pyproject.toml`, `docker-compose.yml`,
 `README.md`) require a PR — no direct commits to `main` from Claude agents.
@@ -42,12 +45,30 @@ Shared files (`CLAUDE.md`, `.gitignore`, `pyproject.toml`, `docker-compose.yml`,
 
 ### Interface contracts (how layers communicate)
 
-- **Pipeline → Backend:** pipeline writes Cloud-Optimized GeoTIFFs to `data/processed/`
-  with a fixed naming scheme: `<product>_<date>_<tile>.tif`
+**Pipeline → Backend:**
+- Pipeline writes Cloud-Optimized GeoTIFFs to `data/processed/`
+- Naming scheme: `<product>_<YYYYMMDD>_<tile>.tif`
   (e.g. `soil_moisture_20240315_pampa_r01c01.tif`)
-- **Backend → Frontend:** backend exposes tile endpoint at
-  `GET /tiles/{layer}/{z}/{x}/{y}.png` and a metadata endpoint
-  `GET /layers` returning available products as GeoJSON
+- Products: `ndvi`, `ndmi`, `ndwi`, `bsi`, `soil_moisture`, `backscatter_hh`, `soil_cluster`
+- COGs must have internal overviews and be ≥2048×2048 px for zoom level 7+ support
+  (smaller rasters top out at zoom 5–6 and won't render at the default map zoom)
+
+**Backend → Frontend:**
+- `GET /layers` — returns GeoJSON FeatureCollection where each feature has:
+  ```json
+  {
+    "properties": {
+      "id": "soil_moisture_20240315_pampa_r01c01",  ← full file stem (used in tile URL)
+      "product": "soil_moisture",                    ← short product name
+      "date": "20240315",                            ← YYYYMMDD
+      "tile": "pampa_r01c01",
+      "bounds": [-65.0, -38.0, -57.0, -30.0]
+    }
+  }
+  ```
+- `GET /tiles/{full_stem}/{z}/{x}/{y}.png` — PNG tile; colormap applied server-side
+- `GET /health` — `{"status": "ok"}`
+- Backend runs on port **8000**; frontend Vite proxy forwards `/tiles` and `/layers` to it
 
 ---
 
@@ -111,14 +132,27 @@ a Python backend to a React + Leaflet/Deck.gl frontend.
   ```python
   import asf_search as asf
 
+  # SAOCOM is NOT in asf.PLATFORM constants — pass as strings
+  # SAOCOM search requires an authenticated session (unauthenticated returns empty)
+  session = asf.ASFSession().auth_with_creds('user', 'pass')
   results = asf.search(
-      platform=asf.PLATFORM.SAOCOM1A,
-      processingLevel=asf.PRODUCT_TYPE.GRD_HD,
-      intersectsWith='POLYGON((-64 -33, -63 -33, -63 -32, -64 -32, -64 -33))',
+      platform=["SAOCOM-1A", "SAOCOM-1B"],
+      processingLevel="GRD_HD",
+      intersectsWith='POLYGON((-65 -38, -57 -38, -57 -30, -65 -30, -65 -38))',
       start='2024-01-01',
       end='2024-12-31',
+      opts=asf.ASFSearchOptions(session=session),
   )
-  results.download(path='./data/raw', session=asf.ASFSession().auth_with_creds('user','pass'))
+  results.download(path='./data/raw', session=session)
+  ```
+- **Sentinel-1 search works without auth** and is a good fallback for pipeline testing:
+  ```python
+  results = asf.search(
+      platform=[asf.PLATFORM.SENTINEL1A, asf.PLATFORM.SENTINEL1B],
+      processingLevel=asf.PRODUCT_TYPE.GRD_HD,
+      intersectsWith='POLYGON((-65 -38, -57 -38, -57 -30, -65 -30, -65 -38))',
+      start='2024-01-01', end='2024-12-31', maxResults=20,
+  )
   ```
 - Authentication: NASA Earthdata account (free) at https://urs.earthdata.nasa.gov/
 
@@ -180,32 +214,54 @@ Soil Moisture Retrieval                        SAR Texture Features
 
 ## Tech Stack
 
-### Backend (Python)
+### Pipeline (Python) — Nico
 | Library | Purpose |
 |---------|---------|
-| `asf-search` | SAOCOM scene search and download from ASF |
+| `asf-search` | SAOCOM/Sentinel-1 search and download from ASF |
 | `sentinelhub` | Sentinel-2 data access |
-| `pyroSAR` | SAR metadata handling and SNAP workflow automation |
-| `snapista` | Python bindings for ESA SNAP (SAR preprocessing) |
+| `pyroSAR` / `snapista` | SAR metadata + ESA SNAP preprocessing |
 | `rasterio` | Raster I/O and reprojection |
-| `xarray` + `rioxarray` | Multidimensional array operations on rasters |
+| `xarray` + `rioxarray` | Multidimensional array operations |
 | `numpy`, `scipy` | Numerical processing |
-| `scikit-learn` | ML models (regression, clustering) |
+| `scikit-learn` | K-means clustering, regression |
 | `rio-cogeo` | Export Cloud-Optimized GeoTIFFs |
-| `FastAPI` | REST API + tile serving |
-| `titiler` | Dynamic COG tile server (plugs into FastAPI) |
 
-### Frontend
+### Backend (Python) — Arturo
 | Library | Purpose |
 |---------|---------|
-| React | UI framework |
-| Leaflet / react-leaflet | Base map + raster tile overlay |
-| Deck.gl (optional) | GPU-accelerated large dataset visualization |
+| `FastAPI` | REST API framework |
+| `uvicorn` | ASGI server |
+| `rio-tiler` | COG tile rendering (replaces titiler for direct control) |
+| `rasterio` | Raster bounds/metadata reading |
+| `pydantic-settings` | Config via `.env` |
+
+### Frontend (JavaScript) — Franco
+| Library | Purpose |
+|---------|---------|
+| React 18 | UI framework |
+| Vite | Build tool + dev server (port 5173) |
+| Leaflet + react-leaflet | Base map + raster tile overlay |
+| Node.js v22 LTS | Runtime (installed to `~/.local/` via direct binary download) |
 
 ### Infrastructure (hackathon-scale)
-- Local processing or single cloud VM (GPU optional for ML inference)
-- Static COG tiles served from local filesystem or S3-compatible storage
-- No Kubernetes needed at this stage
+- Local processing; `data/processed/` is the shared data handoff directory
+- Backend `data_dir` defaults to `../../data/processed` relative to `Arturo/backend/`
+- Frontend Vite proxy: `/tiles` and `/layers` → `http://localhost:8000`
+- No Docker required for local dev (docker-compose available for deployment)
+
+### Running the stack locally
+```bash
+# Terminal 1 — backend
+cd Arturo/backend
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2 — frontend (Node must be on PATH)
+# If node not found: export PATH="$HOME/.local/bin:$PATH"
+cd frontend
+npm install
+npm run dev
+# Opens at http://localhost:5173
+```
 
 ---
 
@@ -240,13 +296,25 @@ West: -65°, East: -57°, South: -38°, North: -30°
 
 ## Current Status
 
-- [ ] Register accounts (CONAE, NASA Earthdata, Copernicus)
-- [ ] Test `asf-search` programmatic SAOCOM scene search
-- [ ] Download one SAOCOM GRD scene over Pampas AOI
+### Done
+- [x] NASA Earthdata account registered (Franco)
+- [x] `asf-search` installed; Sentinel-1 scene search working over Pampas AOI
+- [x] Pipeline layer scaffolded: download, preprocessing, indices, moisture, clustering modules
+- [x] Backend scaffolded: FastAPI + rio-tiler serving COG tiles at `/tiles/{stem}/{z}/{x}/{y}.png`
+- [x] Frontend scaffolded: React + Leaflet, layer panel (7 layers), legend, live `/layers` hook
+- [x] Full stack running locally — frontend at :5173, backend at :8000, proxy connected
+- [x] Synthetic soil moisture COG tested end-to-end through the full stack
+
+### In progress
+- [ ] SAOCOM download via CONAE catalog (requires CONAE account + manual portal access)
+- [ ] SAOCOM search via ASF authenticated session (NASA Earthdata credentials needed in env)
+- [ ] Sentinel-2 download via Copernicus Data Space (needs `SH_CLIENT_ID` / `SH_CLIENT_SECRET`)
+
+### Pending
+- [ ] Download real SAOCOM GRD scene over Pampas AOI
 - [ ] Download matching Sentinel-2 scene (same date ±3 days, cloud < 20%)
-- [ ] Set up ESA SNAP for SAR preprocessing (or `snapista` wrapper)
-- [ ] Run calibration + terrain correction + speckle filter on test scene
-- [ ] Compute BSI and NDMI from Sentinel-2
-- [ ] Prototype soil moisture retrieval (start with empirical σ⁰ → SM regression)
-- [ ] Scaffold FastAPI + titiler tile server
-- [ ] Scaffold React + Leaflet frontend
+- [ ] Run SAR preprocessing (calibration + terrain correction + speckle filter via SNAP)
+- [ ] Compute NDVI, NDMI, NDWI, BSI from real Sentinel-2 data
+- [ ] Run Water Cloud Model soil moisture retrieval
+- [ ] Run K-means clustering on fused SAR + optical feature stack
+- [ ] Replace synthetic COG with real pipeline outputs in `data/processed/`

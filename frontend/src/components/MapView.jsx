@@ -7,14 +7,11 @@ const CENTER = [-34.0, -61.0]
 const ZOOM   = 7
 const BOUNDS = [[-38, -65], [-30, -57]]
 
-function buildTileUrl(layerId, meta) {
-  const base = `/tiles/${layerId}/{z}/{x}/{y}.png`
-  if (!meta) return base
-  const params = new URLSearchParams()
-  if (meta.min != null && meta.max != null) params.set('rescale', `${meta.min},${meta.max}`)
-  if (meta.colormap) params.set('colormap_name', meta.colormap)
-  const qs = params.toString()
-  return qs ? `${base}?${qs}` : base
+function buildTileUrl(layer) {
+  // Use the full stem (layerId) so the backend can resolve the .tif file.
+  // Colormap and rescaling are handled server-side — no query params needed.
+  const stem = layer.layerId ?? layer.id
+  return `/tiles/${stem}/{z}/{x}/{y}.png`
 }
 
 // Swaps the analytical overlay when activeLayer changes without remounting the map
@@ -33,7 +30,7 @@ function OverlayLayer({ layer }) {
     if (!L) return
 
     overlayRef.current?.remove()
-    const url = buildTileUrl(layer.id, layer)
+    const url = buildTileUrl(layer)
     overlayRef.current = L.tileLayer(url, { opacity: 0.75, zIndex: 400 }).addTo(map)
 
     return () => {

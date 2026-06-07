@@ -16,12 +16,18 @@ export function useLayers() {
       })
       .then(geojson => {
         const features = geojson.features ?? []
-        // Group by product id, keep most recent date per product
-        const byId = {}
+        // Group by product name, keep most recent entry per product
+        // properties.product = short name (e.g. "soil_moisture")
+        // properties.id      = full stem   (e.g. "soil_moisture_20240315_pampa_r01c01")
+        const byProduct = {}
         for (const f of features) {
           const p = f.properties
-          if (!byId[p.id] || p.date > byId[p.id].date) {
-            byId[p.id] = { ...p, bbox: f.bbox }
+          if (!byProduct[p.product] || p.date > byProduct[p.product].date) {
+            byProduct[p.product] = {
+              ...p,
+              layerId: p.id,   // full stem for tile URL
+              date: p.date      // YYYYMMDD — formatted in component
+            }
           }
         }
         const merged = LAYER_ORDER
@@ -29,8 +35,8 @@ export function useLayers() {
           .map(id => ({
             ...LAYER_META[id],
             id,
-            available: Boolean(byId[id]),
-            ...(byId[id] ?? {}),
+            available: Boolean(byProduct[id]),
+            ...(byProduct[id] ?? {}),
           }))
         setLayers(merged)
         setBackendOnline(true)

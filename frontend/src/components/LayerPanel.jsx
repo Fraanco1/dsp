@@ -24,7 +24,7 @@ export default function LayerPanel({ layers, activeId, onSelect, backendOnline }
               <span className="layer-label">{layer.label}</span>
               <span className="layer-meta">
                 {layer.date
-                  ? <span className="layer-date">{layer.date}</span>
+                  ? <span className="layer-date">{layer.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')}</span>
                   : <span className="layer-pending">pending</span>
                 }
                 <span className="layer-unit">{layer.unit}</span>
